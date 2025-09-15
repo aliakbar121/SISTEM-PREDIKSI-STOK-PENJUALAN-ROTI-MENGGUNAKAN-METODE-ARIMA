@@ -1,0 +1,59 @@
+<!-- templates/upload.html -->
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Upload Dataset Penjualan</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f7fa;
+      text-align: center;
+      padding: 50px 20px;
+    }
+    h1 {
+      color: #2c3e50;
+    }
+    form {
+      background: white;
+      max-width: 500px;
+      margin: auto;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    input[type="file"] {
+      display: block;
+      margin: 20px auto;
+    }
+    button {
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      padding: 12px 25px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    p {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Upload Dataset Penjualan</h1>
+  <p>Prediksi Penjualan Menggunakan ARIMA</p>
+
+  <form method="POST" enctype="multipart/form-data">
+    <input type="file" name="file" accept=".xlsx">
+    <br>
+    <button type="submit">Unggah & Prediksi</button>
+  </form>
+
+  {% if error %}
+    <p>{{ error }}</p>
+  {% endif %}
+
+</body>
+</html>

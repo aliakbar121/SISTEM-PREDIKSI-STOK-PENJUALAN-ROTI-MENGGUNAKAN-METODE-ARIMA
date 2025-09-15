@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Hasil Prediksi Penjualan</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f4f7f6;
+      padding: 40px;
+      color: #333;
+    }
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background: #fff;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    }
+    h1, h2 {
+      color: #2c3e50;
+      text-align: center;
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 10px;
+      margin-bottom: 30px;
+    }
+    canvas {
+      margin-top: 20px;
+      margin-bottom: 40px;
+    }
+    .btn-container {
+      text-align: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    .btn {
+      background-color: #3498db;
+      color: white;
+      padding: 12px 25px;
+      text-decoration: none;
+      border-radius: 5px;
+      display: inline-block;
+      margin: 10px;
+      transition: background-color 0.3s;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .btn:hover { background-color: #2980b9; }
+    .btn-danger { background-color: #e74c3c; }
+    .btn-danger:hover { background-color: #c0392b; }
+    .btn-warning { background-color: #f39c12; }
+    .btn-warning:hover { background-color: #e67e22; }
+    .alert { padding: 15px; margin-bottom: 20px; border: 1px solid transparent; border-radius: 4px; text-align: center; }
+    .alert-success { color: #155724; background-color: #d4edda; border-color: #c3e6cb; }
+    .alert-danger { color: #721c24; background-color: #f8d7da; border-color: #f5c6cb; }
+    .alert-warning { color: #856404; background-color: #fff3cd; border-color: #ffeeba;}
+    footer { text-align: center; margin-top: 50px; color: #aaa; }
+    .metrics-container { text-align: center; margin-top: 20px; margin-bottom: 40px; padding: 20px; background-color: #f8f9fa; border-radius: 8px; }
+    .metrics-container h3 { margin-top: 0; color: #2c3e50; }
+    .metric-item { display: inline-block; width: 45%; min-width: 250px; margin: 10px; padding: 15px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.07); vertical-align: top; }
+    .metric-item h4 { margin: 0 0 10px 0; color: #34495e; }
+    .metric-value { font-size: 2.5em; font-weight: bold; color: #2980b9; margin: 10px 0; }
+    .metric-item small { color: #7f8c8d; }
+    .delete-specific-container { text-align: center; margin-top: 40px; padding: 20px; border: 1px solid #f1c40f; border-radius: 8px; background-color: #fef9e7; }
+    .delete-specific-container h3 { margin-top: 0; }
+    .delete-specific-container p { font-size: 0.9em; color: #555; }
+    .delete-specific-container input[type="number"] { padding: 10px; border: 1px solid #ccc; border-radius: 5px; margin: 0 10px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <h1>Hasil Analisis & Prediksi Penjualan</h1>
+    
+    {% if error %}
+      <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    {% if historical_dates %}
+      <h2>Evaluasi Model pada Data (80% Train, 20% Test)</h2>
+      <canvas id="trainTestChart" width="800" height="400"></canvas>
+      <script>
+        const trainTestCtx = document.getElementById('trainTestChart').getContext('2d');
+        new Chart(trainTestCtx, {
+          type: 'line',
+          data: {
+            labels: {{ historical_dates | tojson | safe }},
+            datasets: [
+              {
+                label: 'Data Train',
+                data: {{ train_data_chart | tojson | safe }},
+                borderColor: 'blue',
+                fill: false,
+                pointRadius: 1,
+                borderWidth: 2
+              },
+              {
+                label: 'Data Test',
+                data: {{ test_actual_chart | tojson | safe }},
+                borderColor: 'green',
+                fill: false,
+                pointRadius: 1,
+                borderWidth: 2
+              },
+              {
+                label: 'Prediksi ARIMA',
+                data: {{ test_predictions_chart | tojson | safe }},
+                borderColor: 'red',
+                borderDash: [5, 5], // Garis putus-putus
+                fill: false,
+                pointRadius: 2,
+                borderWidth: 2
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: 'Prediksi Penjualan Roti Menggunakan ARIMA' },
+              legend: { position: 'top' }
+            },
+            scales: {
+              x: { title: { display: true, text: 'Tanggal' } },
+              y: { title: { display: true, text: 'Jumlah Terjual' } }
+            }
+          }
+        });
+      </script>
+    {% endif %}
+    
+    <!-- Bagian Metrik Akurasi (MAE & MSE) -->
+    {% if mae is not none and mse is not none %}
+    <div class="metrics-container">
+      <h3>Metrik Evaluasi Model</h3>
+      <div class="metric-item">
+        <h4>MAE (Mean Absolute Error)</h4>
+        <p class="metric-value">{{ "%.2f"|format(mae) }}</p>
+        <small>Rata-rata selisih absolut antara prediksi dan nilai aktual.</small>
+      </div>
+      <div class="metric-item">
+        <h4>MSE (Mean Squared Error)</h4>
+        <p class="metric-value">{{ "%.2f"|format(mse) }}</p>
+        <small>Rata-rata dari kuadrat selisih. Memberi bobot lebih pada kesalahan besar.</small>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Grafik Prediksi Masa Depan -->
+    {% if future_dates %}
+      <h2>Prediksi Penjualan 1 bulan ke Depan</h2>
+      <canvas id="predictionChart" width="800" height="400"></canvas>
+      <script>
+        const predictionCtx = document.getElementById('predictionChart').getContext('2d');
+        new Chart(predictionCtx, {
+          type: 'line',
+          data: {
+            labels: {{ future_dates | tojson | safe }},
+            datasets: [{
+              label: 'Prediksi Penjualan',
+              data: {{ future_values | tojson | safe }},
+              borderColor: '#27ae60',
+              backgroundColor: 'rgba(39, 174, 96, 0.2)',
+              fill: true,
+              tension: 0.3
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              title: { display: true, text: 'Prediksi Penjualan 1 Bulan' }
+            },
+            scales: {
+              x: { title: { display: true, text: 'Tanggal' } },
+              y: { title: { display: true, text: 'Jumlah Terjual' } }
+            }
+          }
+        });
+      </script>
+    {% endif %}
+
+    <div class="btn-container">
+      <a href="{{ url_for('upload_file') }}" class="btn">Tambah Data Baru</a>
+      <a href="{{ url_for('show_prediction') }}" class="btn">Muat Ulang Halaman</a>
+      <form action="{{ url_for('delete_all_data') }}" method="POST" style="display: inline;" 
+            onsubmit="return confirm('PERINGATAN: Anda akan menghapus SEMUA data. Lanjutkan?');">
+        <button type="submit" class="btn btn-danger">Hapus Semua Data</button>
+      </form>
+    </div>
+
+    <div class="delete-specific-container">
+        <h3>Hapus Data Penjualan Sebagian</h3>
+        <p>Gunakan fitur ini untuk menghapus data penjualan setelah ID terakhir yang ingin Anda simpan.</p>
+        <form action="{{ url_for('delete_after_id') }}" method="POST" 
+              onsubmit="return confirm('Anda yakin ingin menghapus data penjualan SETELAH ID yang dimasukkan?');">
+            <label for="target_id">Simpan data sampai dengan ID:</label>
+            <input type="number" id="target_id" name="target_id" placeholder="Contoh: 228" required>
+            <button type="submit" class="btn btn-warning">Hapus Data Setelah ID</button>
+        </form>
+    </div>
+
+    <footer> {{ current_year }} | Sistem Prediksi Penjualan - ARIMA</footer>
+
+  </div>
+</body>
+</html>
